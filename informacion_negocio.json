@@ -1,0 +1,403 @@
+{
+  "negocio": {
+    "nombre": "Café Santo Domingo",
+    "idioma_atencion": "español",
+    "descripcion": "Negocio de café, productos y servicios relacionados."
+  },
+  "menu_atencion": {
+    "titulo": "Menú de atención",
+    "opciones": [
+      {
+        "id": 1,
+        "nombre": "Ver productos y presentaciones",
+        "intencion": "catalogo"
+      },
+      {
+        "id": 2,
+        "nombre": "Consultar precios",
+        "intencion": "precios"
+      },
+      {
+        "id": 3,
+        "nombre": "Recibir una recomendación de café",
+        "intencion": "recomendacion"
+      },
+      {
+        "id": 4,
+        "nombre": "Consultar sucursales y teléfonos",
+        "intencion": "sucursales"
+      },
+      {
+        "id": 5,
+        "nombre": "Consultar servicios para oficinas o eventos",
+        "intencion": "servicios"
+      },
+      {
+        "id": 6,
+        "nombre": "Redactar una sugerencia",
+        "intencion": "sugerencias"
+      }
+    ],
+    "comando_salida": "sali",
+    "instruccion": "El menú de productos muestra el catálogo completo agrupado por familia. El menú principal muestra estas opciones de atención."
+  },
+  "catalogo": {
+    "fuente_catalogo_oficial": "https://www.induban.com/es/productos/item/cafe-santo-domingo",
+    "nota": "Los nombres aparecen en el catálogo oficial de INDUBAN. La publicación no confirma existencias ni disponibilidad actual.",
+    "fecha_consulta_referencias_de_precio": "2026-09-29",
+    "fuentes_de_precio": [
+      {
+        "id": "almacen_do",
+        "nombre": "Almacén.do",
+        "url": "https://almacen.do/marca/cafe-santo-domingo/"
+      },
+      {
+        "id": "supermercados_consultados",
+        "nombre": "SupermercadosRD",
+        "url": "https://supermercadosrd.com/grupos/cafe-molido",
+        "nota": "Compara precios en línea de distintos comercios; no es el fabricante ni garantiza precios en sucursales de Café Santo Domingo."
+      }
+    ],
+    "moneda": "DOP",
+    "productos": [
+      {
+        "familia": "Clásico",
+        "nombre": "Café Santo Domingo Clásico molido",
+        "presentacion": "1 lb",
+        "precio": {
+          "minimo": 420,
+          "maximo": 420,
+          "fuente": "almacen_do",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Clásico",
+        "nombre": "Café Santo Domingo molido",
+        "presentacion": "8 oz (226.8 g)",
+        "precio": {
+          "minimo": 209,
+          "maximo": 220,
+          "fuente": "supermercados_consultados",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Clásico",
+        "nombre": "Café Santo Domingo molido en lata",
+        "presentacion": "10 oz (283.5 g)",
+        "precio": {
+          "minimo": 369.95,
+          "maximo": 370,
+          "fuente": "supermercados_consultados",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Clásico",
+        "nombre": "Café Santo Domingo molido en sobres",
+        "presentacion": "12 unidades (340.2 g)",
+        "precio": {
+          "minimo": 380,
+          "maximo": 410,
+          "fuente": "supermercados_consultados",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Clásico",
+        "nombre": "Café Santo Domingo Hard Pack",
+        "presentacion": null,
+        "precio": null,
+        "estado_precio": "no_encontrado"
+      },
+      {
+        "familia": "Clásico",
+        "nombre": "Café Santo Domingo Clásico en grano",
+        "presentacion": "1 lb",
+        "precio": {
+          "minimo": 460,
+          "maximo": 460,
+          "fuente": "almacen_do",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Clásico",
+        "nombre": "Café Santo Domingo Clásico en grano",
+        "presentacion": "3 lb",
+        "precio": null,
+        "estado_precio": "no_encontrado"
+      },
+      {
+        "familia": "Clásico",
+        "nombre": "Cápsula de Espresso Café Santo Domingo Clásico",
+        "presentacion": "10 unidades",
+        "precio": {
+          "minimo": 335,
+          "maximo": 335,
+          "fuente": "almacen_do",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Clásico",
+        "nombre": "Cápsula de Espresso Café Santo Domingo Lungo",
+        "presentacion": "10 unidades",
+        "precio": {
+          "minimo": 335,
+          "maximo": 335,
+          "fuente": "almacen_do",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Gran Origen",
+        "nombre": "Gran Origen Suardí molido",
+        "presentacion": "12 oz (340.2 g)",
+        "precio": {
+          "minimo": 614,
+          "maximo": 615,
+          "fuente": "supermercados_consultados",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Gran Origen",
+        "nombre": "Gran Origen Suardí en grano",
+        "presentacion": null,
+        "precio": null,
+        "estado_precio": "no_encontrado"
+      },
+      {
+        "familia": "Gran Origen",
+        "nombre": "Cápsula de Espresso Gran Origen Suardí",
+        "presentacion": "10 unidades",
+        "precio": {
+          "minimo": 375,
+          "maximo": 375,
+          "fuente": "almacen_do",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Gran Origen",
+        "nombre": "Gran Origen Perla Roja molido",
+        "presentacion": "12 oz (340.2 g)",
+        "precio": {
+          "minimo": 614,
+          "maximo": 615,
+          "fuente": "supermercados_consultados",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Gran Origen",
+        "nombre": "Gran Origen Perla Roja en grano",
+        "presentacion": null,
+        "precio": null,
+        "estado_precio": "no_encontrado"
+      },
+      {
+        "familia": "Gran Origen",
+        "nombre": "Cápsula de Espresso Gran Origen Perla Roja",
+        "presentacion": "10 unidades",
+        "precio": {
+          "minimo": 375,
+          "maximo": 375,
+          "fuente": "almacen_do",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Gran Origen",
+        "nombre": "Gran Origen Gran Sierra molido",
+        "presentacion": "12 oz (340.2 g)",
+        "precio": {
+          "minimo": 614,
+          "maximo": 615,
+          "fuente": "supermercados_consultados",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Gran Origen",
+        "nombre": "Gran Origen Gran Sierra en grano",
+        "presentacion": null,
+        "precio": null,
+        "estado_precio": "no_encontrado"
+      },
+      {
+        "familia": "Gran Origen",
+        "nombre": "Cápsula de Espresso Gran Origen Gran Sierra",
+        "presentacion": "10 unidades",
+        "precio": {
+          "minimo": 375,
+          "maximo": 375,
+          "fuente": "almacen_do",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Gran Origen",
+        "nombre": "Gran Origen Barrancolí molido",
+        "presentacion": null,
+        "precio": null,
+        "estado_precio": "no_encontrado"
+      },
+      {
+        "familia": "Gran Origen",
+        "nombre": "Gran Origen Barrancolí en grano",
+        "presentacion": null,
+        "precio": null,
+        "estado_precio": "no_encontrado"
+      },
+      {
+        "familia": "Caracolillo",
+        "nombre": "Café Santo Domingo Caracolillo molido",
+        "presentacion": "1 lb",
+        "precio": {
+          "minimo": 470,
+          "maximo": 470,
+          "fuente": "almacen_do",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Caracolillo",
+        "nombre": "Café Santo Domingo Caracolillo tostado en grano",
+        "presentacion": "1 lb",
+        "precio": {
+          "minimo": 470,
+          "maximo": 470,
+          "fuente": "almacen_do",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Caracolillo",
+        "nombre": "Cápsula de Espresso Café Santo Domingo Caracolillo",
+        "presentacion": "10 unidades",
+        "precio": {
+          "minimo": 335,
+          "maximo": 335,
+          "fuente": "almacen_do",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Descafeinado",
+        "nombre": "Café Santo Domingo Descafeinado molido",
+        "presentacion": "10 oz (283.5 g)",
+        "precio": {
+          "minimo": 509,
+          "maximo": 510,
+          "fuente": "supermercados_consultados",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Descafeinado",
+        "nombre": "Cápsula de Espresso Café Santo Domingo Descafeinado",
+        "presentacion": null,
+        "precio": null,
+        "estado_precio": "no_encontrado"
+      },
+      {
+        "familia": "Espresso e Intenso",
+        "nombre": "Café Santo Domingo Espresso molido",
+        "presentacion": "1 lb",
+        "precio": {
+          "minimo": 450,
+          "maximo": 450,
+          "fuente": "almacen_do",
+          "estado": "referencia_de_tercero"
+        }
+      },
+      {
+        "familia": "Espresso e Intenso",
+        "nombre": "Cápsula de Espresso Café Santo Domingo Intenso",
+        "presentacion": "10 unidades",
+        "precio": {
+          "minimo": 335,
+          "maximo": 335,
+          "fuente": "almacen_do",
+          "estado": "referencia_de_tercero"
+        }
+      }
+    ]
+  },
+  "servicios": [
+    {
+      "nombre": "Recomendación de molienda y método de preparación",
+      "precio": {
+        "valor": 0,
+        "moneda": "DOP",
+        "estado": "sin_costo"
+      }
+    },
+    {
+      "nombre": "Preparación de pedidos para regalo",
+      "precio": {
+        "desde": 150,
+        "moneda": "DOP",
+        "estado": "provisional_no_confirmado",
+        "condiciones": "Depende del empaque."
+      }
+    },
+    {
+      "nombre": "Suministro de café para oficinas",
+      "precio": {
+        "estado": "requiere_cotizacion",
+        "condiciones": "Depende del volumen y la frecuencia."
+      }
+    },
+    {
+      "nombre": "Barra de café para eventos",
+      "precio": {
+        "desde": 250,
+        "moneda": "DOP",
+        "unidad": "persona",
+        "estado": "provisional_no_confirmado",
+        "condiciones": "Depende de la cantidad de personas, ubicación y selección de bebidas; requiere cotización."
+      }
+    },
+    {
+      "nombre": "Entrega",
+      "precio": {
+        "estado": "por_confirmar",
+        "condiciones": "Costo y cobertura dependen de la dirección."
+      }
+    }
+  ],
+  "sucursales_y_contacto": {
+    "sucursales": [
+      {
+        "nombre": "Café Santo Domingo - Sambil Santo Domingo",
+        "direccion": "Avenida John F. Kennedy, esquina Paseo de los Aviadores, Santo Domingo, D.N.; Nivel Galería, local G-88.",
+        "telefono_publicado": "829-547-4242",
+        "fuente": "https://sambil.do/tiendas/cafe-santo-domingo/",
+        "tipo_fuente": "directorio_oficial_del_centro_comercial",
+        "nota": "Dirección clara publicada por el directorio del centro comercial. Confirmar vigencia antes de asegurar horarios, teléfono o disponibilidad."
+      },
+      {
+        "nombre": "Café Santo Domingo - ficha de Megacentro",
+        "direccion": null,
+        "telefono_publicado": "809-565-3121",
+        "ubicacion_publicada_ambigua": "Paseo Caribe | Plaza de las Estrellas",
+        "fuente": "https://www.megacentro.com.do/directorio/cafe-santo-domingo/",
+        "tipo_fuente": "directorio_oficial_del_centro_comercial",
+        "nota": "La ubicación de la ficha es ambigua. No usarla para dar una dirección ni para recomendar la sucursal más cercana."
+      }
+    ],
+    "buzon_sugerencias": {
+      "estado": "pendiente_de_verificacion",
+      "nota": "No afirmar que una sugerencia fue enviada, guardada o recibida."
+    },
+    "reglas": [
+      "Los datos proceden de directorios de centros comerciales, no de un directorio central de la marca.",
+      "No afirmar que la lista incluya todas las sucursales ni que los teléfonos sigan vigentes sin confirmación.",
+      "No inventar teléfonos, direcciones, correos, horarios ni otros canales de contacto."
+    ]
+  }
+}
