@@ -1,12 +1,57 @@
 import json
 from collections.abc import Iterable
 from pathlib import Path
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 
 class ItemPedido(TypedDict):
-    productos: str
     cantidad: int
+    producto: NotRequired[str]
+    productos: NotRequired[str]
+
+
+herramientas = [
+    {
+        "type": "function",
+        "function": {
+            "name": "calcular_pedidos",
+            "description": (
+                "Usa siempre esta herramienta cuando el cliente pregunte cuánto cuesta "
+                "o cuánto sería el precio de uno o varios productos. Calcula el total "
+                "con los precios referenciales del menú; no inventes precios."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "producto": {
+                                    "type": "string",
+                                    "description": (
+                                        "Nombre del producto como aparece en el menú, "
+                                        "incluida su presentación."
+                                    ),
+                                },
+                                "cantidad": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "description": "Cantidad solicitada del producto.",
+                                },
+                            },
+                            "required": ["producto", "cantidad"],
+                            "additionalProperties": False,
+                        },
+                    }
+                },
+                "required": ["items"],
+                "additionalProperties": False,
+            },
+        },
+    }
+]
 
 
 def _normalizar_nombre(nombre: str) -> str:
@@ -17,7 +62,7 @@ def _formatear_precio(precio: float) -> str:
     return f"RD${precio:g}"
 
 
-def calcular_pedidos(itms: Iterable[ItemPedido]) -> str:
+def calcular_pedidos(items: Iterable[ItemPedido]) -> str:
     """Calcula el total referencial de una lista de productos y cantidades."""
     ruta_datos = Path(__file__).with_name("informacion_negocio.json")
     with ruta_datos.open(encoding="utf-8") as archivo:
@@ -28,8 +73,12 @@ def calcular_pedidos(itms: Iterable[ItemPedido]) -> str:
     total_minimo = 0.0
     total_maximo = 0.0
 
-    for item in itms:
-        producto_solicitado = _normalizar_nombre(item["productos"])
+    for item in items:
+        nombre_producto = item.get("producto") or item.get("productos")
+        if not nombre_producto:
+            raise ValueError("Cada producto debe incluir la clave 'producto'.")
+
+        producto_solicitado = _normalizar_nombre(nombre_producto)
         cantidad = item["cantidad"]
         if isinstance(cantidad, bool) or not isinstance(cantidad, int) or cantidad <= 0:
             raise ValueError("La cantidad de cada producto debe ser un entero positivo.")
@@ -96,3 +145,13 @@ def calcular_pedidos(itms: Iterable[ItemPedido]) -> str:
         "\n".join(detalle)
         + f"\nTotal referencial: {texto_total}.\nLos precios son referenciales y pueden cambiar."
     )
+
+
+def ejecutar_herramientas(
+    nombre: str, argumentos: dict[str, list[ItemPedido]]
+) -> str:
+    """Ejecuta una herramienta disponible por su nombre."""
+    if nombre in {"calcular_pedido", "calcular_pedidos"}:
+        return calcular_pedidos(argumentos["items"])
+
+    return f"La herramienta '{nombre}' no existe."
