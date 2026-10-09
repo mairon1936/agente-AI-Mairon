@@ -17,8 +17,9 @@ herramientas = [
             "name": "calcular_pedidos",
             "description": (
                 "Usa siempre esta herramienta cuando el cliente pregunte cuánto cuesta "
-                "o cuánto sería el precio de uno o varios productos. Calcula el total "
-                "con los precios referenciales del menú; no inventes precios."
+                "o cuánto sería el precio de uno o varios productos del catálogo o del "
+                "menú de cafetería. Calcula el total con los precios de referencia; "
+                "no inventes precios."
             ),
             "parameters": {
                 "type": "object",
@@ -68,7 +69,9 @@ def calcular_pedidos(items: Iterable[ItemPedido]) -> str:
     with ruta_datos.open(encoding="utf-8") as archivo:
         datos = json.load(archivo)
 
-    productos_menu = datos["catalogo"]["productos"]
+    productos_menu = (
+        datos["catalogo"]["productos"] + datos["menu_cafeteria"]["productos"]
+    )
     detalle: list[str] = []
     total_minimo = 0.0
     total_maximo = 0.0
@@ -143,7 +146,8 @@ def calcular_pedidos(items: Iterable[ItemPedido]) -> str:
 
     return (
         "\n".join(detalle)
-        + f"\nTotal referencial: {texto_total}.\nLos precios son referenciales y pueden cambiar."
+        + f"\nTotal referencial: {texto_total}."
+        "\nLos precios no están confirmados y pueden cambiar; verifica la vigencia con el negocio."
     )
 
 

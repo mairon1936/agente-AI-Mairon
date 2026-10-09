@@ -36,10 +36,15 @@
         "id": 6,
         "nombre": "Redactar una sugerencia",
         "intencion": "sugerencias"
+      },
+      {
+        "id": 7,
+        "nombre": "Ver menú de cafetería",
+        "intencion": "menu_cafeteria"
       }
     ],
-    "comando_salida": "sali",
-    "instruccion": "El menú de productos muestra el catálogo completo agrupado por familia. El menú principal muestra estas opciones de atención."
+    "comando_salida": "salir",
+    "instruccion": "El menú de cafetería muestra bebidas y acompañamientos agrupados por categoría. El catálogo de productos de café muestra los productos empacados agrupados por familia. El menú principal muestra estas opciones de atención."
   },
   "catalogo": {
     "fuente_catalogo_oficial": "https://www.induban.com/es/productos/item/cafe-santo-domingo",
@@ -399,5 +404,165 @@
       "No afirmar que la lista incluya todas las sucursales ni que los teléfonos sigan vigentes sin confirmación.",
       "No inventar teléfonos, direcciones, correos, horarios ni otros canales de contacto."
     ]
+  },
+  "menu_cafeteria": {
+    "fuente": "datos_negocio_cafe_santo_domingo.xlsx",
+    "moneda": "DOP",
+    "nota": "Precios de referencia tomados de la hoja de cálculo; el negocio no los ha confirmado y no deben presentarse como tarifas vigentes.",
+    "productos": [
+      {
+        "nombre": "espresso",
+        "presentacion": null,
+        "familia": "Bebidas calientes",
+        "precio": {
+          "minimo": 95,
+          "maximo": 95,
+          "fuente": "menu_excel",
+          "estado": "referencial_no_confirmado"
+        }
+      },
+      {
+        "nombre": "café americano",
+        "presentacion": null,
+        "familia": "Bebidas calientes",
+        "precio": {
+          "minimo": 110,
+          "maximo": 110,
+          "fuente": "menu_excel",
+          "estado": "referencial_no_confirmado"
+        }
+      },
+      {
+        "nombre": "cappuccino",
+        "presentacion": null,
+        "familia": "Bebidas calientes",
+        "precio": {
+          "minimo": 145,
+          "maximo": 145,
+          "fuente": "menu_excel",
+          "estado": "referencial_no_confirmado"
+        }
+      },
+      {
+        "nombre": "café latte",
+        "presentacion": null,
+        "familia": "Bebidas calientes",
+        "precio": {
+          "minimo": 155,
+          "maximo": 155,
+          "fuente": "menu_excel",
+          "estado": "referencial_no_confirmado"
+        }
+      },
+      {
+        "nombre": "mocha",
+        "presentacion": null,
+        "familia": "Bebidas calientes",
+        "precio": {
+          "minimo": 175,
+          "maximo": 175,
+          "fuente": "menu_excel",
+          "estado": "referencial_no_confirmado"
+        }
+      },
+      {
+        "nombre": "té",
+        "presentacion": null,
+        "familia": "Bebidas calientes",
+        "precio": {
+          "minimo": 100,
+          "maximo": 100,
+          "fuente": "menu_excel",
+          "estado": "referencial_no_confirmado"
+        }
+      },
+      {
+        "nombre": "café frío",
+        "presentacion": null,
+        "familia": "Bebidas frías",
+        "precio": {
+          "minimo": 145,
+          "maximo": 145,
+          "fuente": "menu_excel",
+          "estado": "referencial_no_confirmado"
+        }
+      },
+      {
+        "nombre": "cold brew",
+        "presentacion": null,
+        "familia": "Bebidas frías",
+        "precio": {
+          "minimo": 165,
+          "maximo": 165,
+          "fuente": "menu_excel",
+          "estado": "referencial_no_confirmado"
+        }
+      },
+      {
+        "nombre": "latte frío",
+        "presentacion": null,
+        "familia": "Bebidas frías",
+        "precio": {
+          "minimo": 165,
+          "maximo": 165,
+          "fuente": "menu_excel",
+          "estado": "referencial_no_confirmado"
+        }
+      },
+      {
+        "nombre": "galleta",
+        "presentacion": null,
+        "familia": "Acompañamientos",
+        "precio": {
+          "minimo": 75,
+          "maximo": 75,
+          "fuente": "menu_excel",
+          "estado": "referencial_no_confirmado"
+        }
+      },
+      {
+        "nombre": "croissant",
+        "presentacion": null,
+        "familia": "Acompañamientos",
+        "precio": {
+          "minimo": 120,
+          "maximo": 120,
+          "fuente": "menu_excel",
+          "estado": "referencial_no_confirmado"
+        }
+      },
+      {
+        "nombre": "sándwich",
+        "presentacion": null,
+        "familia": "Acompañamientos",
+        "precio": {
+          "minimo": 220,
+          "maximo": 220,
+          "fuente": "menu_excel",
+          "estado": "referencial_no_confirmado"
+        }
+      }
+    ]
+  },
+  "informacion_adicional": {
+    "fuente": "datos_negocio_cafe_santo_domingo.xlsx",
+    "consumo": "Se puede consumir en el local o pedir para llevar; disponibilidad y detalles deben confirmarse con el negocio.",
+    "coffee_break_eventos": {
+      "precio_desde": 350,
+      "moneda": "DOP",
+      "unidad": "persona",
+      "estado": "provisional_no_confirmado",
+      "condiciones": "Depende de la cantidad de personas, la selección del menú y la fecha; requiere confirmación del negocio."
+    },
+    "sucursales": {
+      "localizador_oficial": "https://www.induban.com/sucursales",
+      "instruccion": "Para recomendar una sucursal, pregunta primero la ciudad, sector o zona; no hace falta pedir la dirección exacta.",
+      "nota": "El localizador no publica teléfonos directos por sucursal."
+    },
+    "contacto": {
+      "whatsapp_induban": "(809) 544-2233",
+      "whatsapp_uso": "Consultas generales o confirmación del teléfono de una sucursal.",
+      "correo_sugerencias": "cafesantodomingo@induban.com"
+    }
   }
 }

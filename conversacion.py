@@ -11,12 +11,13 @@ def iniciar_conversacion(agente: Agente) -> None:
         "4. Consultar sucursales y teléfonos\n"
         "5. Consultar servicios para oficinas o eventos\n"
         "6. Redactar una sugerencia\n"
-        "Escribe un número, haz tu pregunta o escribe 'sali' para terminar."
+        "7. Ver menú de cafetería\n"
+        "Escribe un número, haz tu pregunta o escribe 'salir' para terminar."
     )
 
     while True:
         mensaje = input("Tú: ").strip()
-        if mensaje.lower() == "sali":
+        if mensaje.lower() == "salir":
             break
 
         respuesta = agente.responder(mensaje)
