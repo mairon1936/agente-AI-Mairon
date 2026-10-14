@@ -1,13 +1,60 @@
-import json
+import unicodedata
 from collections.abc import Iterable
-from pathlib import Path
+from typing import Any
 from typing import NotRequired, TypedDict
+
+from datos import cargar_datos_negocio
+from pedidos import registrar_solicitud
+from sistem_prompts import SYSTEM_PROMPT
+
+
+def crear_historial(
+    comportamiento: str = SYSTEM_PROMPT,
+) -> list[dict[str, Any]]:
+    """Crea el historial inicial de una conversación."""
+    return [{"role": "system", "content": comportamiento}]
 
 
 class ItemPedido(TypedDict):
     cantidad: int
     producto: NotRequired[str]
     productos: NotRequired[str]
+
+
+def preparar_mensajes_groq(
+    historial: list[dict[str, Any]],
+    mensaje_actual: str,
+) -> list[dict[str, Any]]:
+    """Prepara contexto reciente para Groq sin modificar el historial local."""
+    if not historial:
+        return [{"role": "user", "content": mensaje_actual}]
+
+    mensajes = [historial[0]]
+    respuesta_anterior = next(
+        (
+            mensaje.get("content")
+            for mensaje in reversed(historial[1:])
+            if mensaje.get("role") == "assistant"
+            and isinstance(mensaje.get("content"), str)
+            and mensaje["content"]
+        ),
+        None,
+    )
+    if respuesta_anterior:
+        mensajes.append(
+            {"role": "assistant", "content": respuesta_anterior[:400]}
+        )
+    mensajes.append({"role": "user", "content": mensaje_actual})
+    return mensajes
+
+
+def mostrar_historial(historial: list[dict[str, Any]]) -> None:
+    """Imprime los mensajes visibles de una conversación."""
+    for mensaje in historial:
+        rol = mensaje.get("role")
+        contenido = mensaje.get("content")
+        if rol in {"user", "assistant"} and contenido is not None:
+            print(f"{rol}: {contenido}")
 
 
 herramientas = [
@@ -51,12 +98,52 @@ herramientas = [
                 "additionalProperties": False,
             },
         },
-    }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "registrar_solicitud",
+            "description": (
+                "Usa esta herramienta cuando el cliente quiera realizar, guardar "
+                "o registrar una solicitud de pedido. Guarda el resumen del pedido "
+                "en pedidos.xlsx. Esto solo registra la solicitud localmente; no "
+                "confirma que el negocio la haya recibido o aceptado."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "solicitud": {
+                        "type": "string",
+                        "description": (
+                            "Resumen fiel del pedido solicitado por el cliente, "
+                            "incluidas cantidades, productos y detalles que haya dado."
+                        ),
+                    },
+                    "deliveri": {
+                        "type": "string",
+                        "enum": ["Delivery", "Retiro", "Pendiente"],
+                        "description": "Modalidad de entrega elegida por el cliente.",
+                    },
+                },
+                "required": ["solicitud"],
+                "additionalProperties": False,
+            },
+        },
+    },
 ]
 
 
 def _normalizar_nombre(nombre: str) -> str:
-    return " ".join(nombre.lower().split())
+    nombre_sin_acentos = unicodedata.normalize("NFKD", nombre)
+    return " ".join(
+        "".join(
+            caracter
+            for caracter in nombre_sin_acentos
+            if not unicodedata.combining(caracter)
+        )
+        .casefold()
+        .split()
+    )
 
 
 def _formatear_precio(precio: float) -> str:
@@ -65,10 +152,7 @@ def _formatear_precio(precio: float) -> str:
 
 def calcular_pedidos(items: Iterable[ItemPedido]) -> str:
     """Calcula el total referencial de una lista de productos y cantidades."""
-    ruta_datos = Path(__file__).with_name("informacion_negocio.json")
-    with ruta_datos.open(encoding="utf-8") as archivo:
-        datos = json.load(archivo)
-
+    datos = cargar_datos_negocio()
     productos_menu = (
         datos["catalogo"]["productos"] + datos["menu_cafeteria"]["productos"]
     )
@@ -152,10 +236,15 @@ def calcular_pedidos(items: Iterable[ItemPedido]) -> str:
 
 
 def ejecutar_herramientas(
-    nombre: str, argumentos: dict[str, list[ItemPedido]]
+    nombre: str, argumentos: dict[str, Any]
 ) -> str:
     """Ejecuta una herramienta disponible por su nombre."""
     if nombre in {"calcular_pedido", "calcular_pedidos"}:
         return calcular_pedidos(argumentos["items"])
+    if nombre == "registrar_solicitud":
+        return registrar_solicitud(
+            argumentos["solicitud"],
+            argumentos.get("deliveri", "Pendiente"),
+        )
 
     return f"La herramienta '{nombre}' no existe."

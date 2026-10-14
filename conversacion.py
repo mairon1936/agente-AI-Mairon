@@ -12,15 +12,25 @@ def iniciar_conversacion(agente: Agente) -> None:
         "5. Consultar servicios para oficinas o eventos\n"
         "6. Redactar una sugerencia\n"
         "7. Ver menú de cafetería\n"
+        "8. Realizar un pedido\n"
+        "9. Solicitar delivery\n"
         "Escribe un número, haz tu pregunta o escribe 'salir' para terminar."
     )
 
-    while True:
-        mensaje = input("Tú: ").strip()
-        if mensaje.lower() == "salir":
-            break
+    try:
+        while True:
+            try:
+                mensaje = input("Tú: ").strip()
+            except EOFError:
+                print("\nLa terminal no tiene entrada interactiva disponible. Saliendo...")
+                break
 
-        respuesta = agente.responder(mensaje)
-        print(f"{agente.nombre_negocio}: {respuesta}")
+            if mensaje.lower() == "salir":
+                break
 
-    agente.mostrar_historiar()
+            respuesta = agente.responder(mensaje)
+            print(f"{agente.nombre_negocio}: {respuesta}")
+    except KeyboardInterrupt:
+        print("\nInterrupción de la terminal. Saliendo...")
+    finally:
+        agente.mostrar_historiar()

@@ -1,0 +1,21 @@
+#!/bin/sh
+set -eu
+
+git diff --cached --name-only --diff-filter=ACMR |
+while IFS= read -r path; do
+    filename=${path##*/}
+    case "$filename" in
+        .env|.env.*)
+            if [ "$filename" != ".env.example" ]; then
+                printf '%s\n' "Commit bloqueado: no agregues archivos de credenciales ($path)." >&2
+                exit 1
+            fi
+            ;;
+    esac
+done
+
+if git diff --cached --no-ext-diff --unified=0 -- |
+    grep -Eq 'gsk_[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----'; then
+    printf '%s\n' "Commit bloqueado: se detectó un patrón de credencial en los cambios preparados." >&2
+    exit 1
+fi
