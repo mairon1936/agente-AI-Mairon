@@ -40,6 +40,10 @@ También puedes iniciar la aplicación desde PowerShell con:
 No ejecutes `python main.py` con el Python global: debe usarse el entorno
 `.venv` del proyecto. En VS Code, las terminales nuevas activan ese entorno
 automáticamente. La aplicación requiere la variable de entorno `GROQ_API_KEY`.
+Para pedidos con productos que no aparecen en el catálogo local, configura
+`GOOGLE_CSE_API_KEY` y `GOOGLE_CSE_ID` en `.env`: el agente los busca en Google
+Custom Search y solo acepta resultados publicados en el sitio oficial de INDUBAN.
+Si no puede verificarlos, no registra el pedido.
 
 ## Protección de credenciales
 

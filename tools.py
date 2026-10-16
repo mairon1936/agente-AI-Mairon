@@ -1,7 +1,13 @@
+import json
+import os
+import re
 import unicodedata
 from collections.abc import Iterable
 from typing import Any
 from typing import NotRequired, TypedDict
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode, urlparse
+from urllib.request import Request, urlopen
 
 from datos import cargar_datos_negocio
 from pedidos import registrar_solicitud
@@ -146,6 +152,125 @@ def _normalizar_nombre(nombre: str) -> str:
     )
 
 
+def _palabras_nombre(nombre: str) -> set[str]:
+    return set(re.findall(r"\w+", _normalizar_nombre(nombre)))
+
+
+class ErrorBusquedaOficial(RuntimeError):
+    """Indica que no fue posible consultar las fuentes oficiales."""
+
+
+def _producto_en_catalogo_local(
+    producto_solicitado: str,
+    productos: list[dict[str, Any]],
+) -> bool:
+    palabras_solicitadas = _palabras_nombre(producto_solicitado)
+    return any(
+        palabras_solicitadas
+        and palabras_solicitadas.issubset(
+            _palabras_nombre(producto["nombre"])
+        )
+        for producto in productos
+    )
+
+
+def _buscar_producto_en_fuente_oficial(producto: str) -> bool:
+    api_key = os.getenv("GOOGLE_CSE_API_KEY")
+    search_engine_id = os.getenv("GOOGLE_CSE_ID")
+    if not api_key or not search_engine_id:
+        raise ErrorBusquedaOficial(
+            "Google Custom Search no está configurado. Define "
+            "GOOGLE_CSE_API_KEY y GOOGLE_CSE_ID para verificar productos."
+        )
+
+    parametros = urlencode(
+        {
+            "key": api_key,
+            "cx": search_engine_id,
+            "q": f'site:induban.com "{producto}"',
+            "num": 5,
+        }
+    )
+    solicitud = Request(
+        f"https://www.googleapis.com/customsearch/v1?{parametros}",
+        headers={"Accept": "application/json"},
+    )
+    try:
+        with urlopen(solicitud, timeout=10) as respuesta:
+            resultados = json.loads(respuesta.read().decode("utf-8"))
+    except HTTPError as error:
+        raise ErrorBusquedaOficial(
+            f"Google Custom Search respondió con el estado HTTP {error.code}."
+        ) from error
+    except (URLError, TimeoutError, OSError) as error:
+        raise ErrorBusquedaOficial(
+            "No se pudo conectar con Google Custom Search."
+        ) from error
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ErrorBusquedaOficial(
+            "Google Custom Search devolvió una respuesta inválida."
+        ) from error
+
+    if not isinstance(resultados, dict):
+        raise ErrorBusquedaOficial(
+            "Google Custom Search devolvió una respuesta inválida."
+        )
+    elementos = resultados.get("items", [])
+    if not isinstance(elementos, list):
+        raise ErrorBusquedaOficial(
+            "Google Custom Search devolvió una respuesta inválida."
+        )
+
+    palabras_especificas = _palabras_nombre(producto) - {
+        "cafe",
+        "santo",
+        "domingo",
+        "de",
+        "del",
+        "la",
+        "el",
+        "en",
+        "y",
+    }
+    if not palabras_especificas:
+        return False
+
+    for resultado in elementos:
+        if not isinstance(resultado, dict):
+            continue
+        url = resultado.get("link")
+        if not isinstance(url, str) or urlparse(url).hostname not in {
+            "induban.com",
+            "www.induban.com",
+        }:
+            continue
+        texto_resultado = _normalizar_nombre(
+            f"{resultado.get('title', '')} {resultado.get('snippet', '')}"
+        )
+        if palabras_especificas.issubset(_palabras_nombre(texto_resultado)):
+            return True
+    return False
+
+
+def verificar_productos_pedido(
+    productos_solicitados: list[str],
+    datos: dict[str, Any] | None = None,
+) -> list[str]:
+    """Devuelve los productos que no se pudieron verificar local u oficialmente."""
+    informacion = datos if datos is not None else cargar_datos_negocio()
+    productos_locales = (
+        informacion["catalogo"]["productos"]
+        + informacion["menu_cafeteria"]["productos"]
+    )
+    no_verificados: list[str] = []
+    for producto in productos_solicitados:
+        if _producto_en_catalogo_local(producto, productos_locales):
+            continue
+        if not _buscar_producto_en_fuente_oficial(producto):
+            no_verificados.append(producto)
+    return no_verificados
+
+
 def _formatear_precio(precio: float) -> str:
     return f"RD${precio:g}"
 
@@ -236,7 +361,9 @@ def calcular_pedidos(items: Iterable[ItemPedido]) -> str:
 
 
 def ejecutar_herramientas(
-    nombre: str, argumentos: dict[str, Any]
+    nombre: str,
+    argumentos: dict[str, Any],
+    cliente_id: str = "terminar",
 ) -> str:
     """Ejecuta una herramienta disponible por su nombre."""
     if nombre in {"calcular_pedido", "calcular_pedidos"}:
@@ -245,6 +372,7 @@ def ejecutar_herramientas(
         return registrar_solicitud(
             argumentos["solicitud"],
             argumentos.get("deliveri", "Pendiente"),
+            cliente_id,
         )
 
     return f"La herramienta '{nombre}' no existe."

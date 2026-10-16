@@ -22,34 +22,50 @@ def _abrir_libro_pedidos() -> tuple[Workbook, Worksheet]:
         hoja = libro.active
         hoja.title = "pedidos"
 
-    encabezados = ("fecha_solicitud", "solicitud", "deliveri", "estado")
+    encabezados = (
+        "fecha_solicitud",
+        "cliente",
+        "contacto",
+        "detalle",
+        "deliveri",
+        "estado",
+    )
     if hoja.max_row == 1 and all(celda.value is None for celda in hoja[1]):
         for columna, encabezado in enumerate(encabezados, start=1):
             hoja.cell(row=1, column=columna, value=encabezado)
-    elif tuple(celda.value for celda in hoja[1][:2]) != encabezados[:2]:
-        libro.close()
-        raise ValueError(
-            "La hoja 'pedidos' debe tener los encabezados "
-            "'fecha_solicitud' y 'solicitud'."
+    elif tuple(celda.value for celda in hoja[1][:len(encabezados)]) != encabezados:
+        encabezados_anteriores = (
+            "fecha_solicitud",
+            "solicitud",
+            "deliveri",
+            "estado",
         )
-
-    encabezado_delivery = hoja.cell(row=1, column=3)
-    if encabezado_delivery.value is None:
-        encabezado_delivery.value = "deliveri"
-    elif encabezado_delivery.value != "deliveri":
-        libro.close()
-        raise ValueError("La tercera columna de la hoja 'pedidos' debe ser 'deliveri'.")
-
-    encabezado_estado = hoja.cell(row=1, column=4)
-    if encabezado_estado.value is None:
-        encabezado_estado.value = "estado"
-    elif encabezado_estado.value != "estado":
-        libro.close()
-        raise ValueError("La cuarta columna de la hoja 'pedidos' debe ser 'estado'.")
+        encabezados_anteriores_actuales = tuple(
+            hoja.cell(row=1, column=columna).value
+            for columna in range(1, len(encabezados_anteriores) + 1)
+        )
+        if (
+            encabezados_anteriores_actuales[:2]
+            != encabezados_anteriores[:2]
+            or encabezados_anteriores_actuales[2:]
+            not in (
+                encabezados_anteriores[2:],
+                ("deliveri", None),
+                (None, "estado"),
+                (None, None),
+            )
+        ):
+            libro.close()
+            raise ValueError(
+                "La hoja 'pedidos' no tiene los encabezados esperados."
+            )
+        hoja.insert_cols(2, amount=2)
+        for columna, encabezado in enumerate(encabezados, start=1):
+            hoja.cell(row=1, column=columna, value=encabezado)
 
     for fila in range(2, hoja.max_row + 1):
-        if hoja.cell(row=fila, column=4).value is None:
-            hoja.cell(row=fila, column=4, value=ESTADO_PENDIENTE)
+        if hoja.cell(row=fila, column=6).value is None:
+            hoja.cell(row=fila, column=6, value=ESTADO_PENDIENTE)
 
     return libro, hoja
 
@@ -59,17 +75,23 @@ def preparar_libro_pedidos() -> None:
     libro, hoja = _abrir_libro_pedidos()
     try:
         hoja.freeze_panes = "A2"
-        hoja.auto_filter.ref = f"A1:D{hoja.max_row}"
+        hoja.auto_filter.ref = f"A1:F{hoja.max_row}"
         hoja.column_dimensions["A"].width = 28
-        hoja.column_dimensions["B"].width = 80
-        hoja.column_dimensions["C"].width = 18
-        hoja.column_dimensions["D"].width = 32
+        hoja.column_dimensions["B"].width = 24
+        hoja.column_dimensions["C"].width = 24
+        hoja.column_dimensions["D"].width = 80
+        hoja.column_dimensions["E"].width = 18
+        hoja.column_dimensions["F"].width = 32
         libro.save(ARCHIVO_PEDIDOS)
     finally:
         libro.close()
 
 
-def registrar_pedido(solicitud: str, deliveri: str = "Pendiente") -> int:
+def registrar_pedido(
+    solicitud: str,
+    deliveri: str = "Pendiente",
+    cliente_id: str = "terminar",
+) -> int:
     """Guarda un pedido y devuelve la fila donde quedó registrado."""
     if not isinstance(solicitud, str) or not solicitud.strip():
         raise ValueError("La solicitud no puede estar vacía.")
@@ -81,16 +103,20 @@ def registrar_pedido(solicitud: str, deliveri: str = "Pendiente") -> int:
         fecha = datetime.now().astimezone().isoformat(timespec="seconds")
         fila = hoja.max_row + 1
         hoja.cell(row=fila, column=1, value=fecha)
-        celda_solicitud = hoja.cell(row=fila, column=2, value=solicitud.strip())
+        hoja.cell(row=fila, column=2, value=cliente_id)
+        hoja.cell(row=fila, column=3, value="")
+        celda_solicitud = hoja.cell(row=fila, column=4, value=solicitud.strip())
         celda_solicitud.data_type = "s"
-        hoja.cell(row=fila, column=3, value=deliveri)
-        hoja.cell(row=fila, column=4, value=ESTADO_PENDIENTE)
+        hoja.cell(row=fila, column=5, value=deliveri)
+        hoja.cell(row=fila, column=6, value=ESTADO_PENDIENTE)
         hoja.freeze_panes = "A2"
-        hoja.auto_filter.ref = f"A1:D{hoja.max_row}"
+        hoja.auto_filter.ref = f"A1:F{hoja.max_row}"
         hoja.column_dimensions["A"].width = 28
-        hoja.column_dimensions["B"].width = 80
-        hoja.column_dimensions["C"].width = 18
-        hoja.column_dimensions["D"].width = 32
+        hoja.column_dimensions["B"].width = 24
+        hoja.column_dimensions["C"].width = 24
+        hoja.column_dimensions["D"].width = 80
+        hoja.column_dimensions["E"].width = 18
+        hoja.column_dimensions["F"].width = 32
         libro.save(ARCHIVO_PEDIDOS)
         return fila
     finally:
@@ -108,8 +134,8 @@ def actualizar_delivery(fila: int, deliveri: str) -> None:
     try:
         if fila > hoja.max_row:
             raise ValueError("No se encontró el pedido que se debe actualizar.")
-        hoja.cell(row=fila, column=3, value=deliveri)
-        hoja.auto_filter.ref = f"A1:D{hoja.max_row}"
+        hoja.cell(row=fila, column=5, value=deliveri)
+        hoja.auto_filter.ref = f"A1:F{hoja.max_row}"
         libro.save(ARCHIVO_PEDIDOS)
     finally:
         libro.close()
@@ -126,16 +152,20 @@ def actualizar_estado_pedido(fila: int, estado: str) -> None:
     try:
         if fila > hoja.max_row:
             raise ValueError("No se encontró el pedido que se debe actualizar.")
-        hoja.cell(row=fila, column=4, value=estado)
-        hoja.auto_filter.ref = f"A1:D{hoja.max_row}"
+        hoja.cell(row=fila, column=6, value=estado)
+        hoja.auto_filter.ref = f"A1:F{hoja.max_row}"
         libro.save(ARCHIVO_PEDIDOS)
     finally:
         libro.close()
 
 
-def registrar_solicitud(solicitud: str, deliveri: str = "Pendiente") -> str:
+def registrar_solicitud(
+    solicitud: str,
+    deliveri: str = "Pendiente",
+    cliente_id: str = "terminar",
+) -> str:
     """Guarda una solicitud de pedido y confirma el registro."""
-    registrar_pedido(solicitud, deliveri)
+    registrar_pedido(solicitud, deliveri, cliente_id)
     return (
         "Tu solicitud quedó registrada. El registro no confirma que el negocio "
         "la haya recibido o aceptado."
