@@ -9,8 +9,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 
-from datos import cargar_datos_negocio
-from pedidos import registrar_solicitud
+from datos import cargar_datos_negocio, registrar_solicitud
 from sistem_prompts import SYSTEM_PROMPT
 
 

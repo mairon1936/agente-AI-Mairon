@@ -18,7 +18,8 @@ los pedidos a una base de datos compartida.
 - `conversacion.py` utiliza `input()` y `print()` para el intercambio de mensajes.
 - `agente.py` guarda el historial y el estado del flujo de pedidos en memoria
   dentro de cada objeto `Agente`.
-- `pedidos.py` registra y actualiza pedidos en un archivo Excel.
+- `datos.py` registra y actualiza pedidos en un archivo Excel, con sincronización
+  entre operaciones concurrentes dentro del proceso.
 - El agente requiere `GROQ_API_KEY` para comunicarse con el proveedor del modelo.
 
 El modo de terminal es apropiado para uso local, pero no proporciona por sí solo

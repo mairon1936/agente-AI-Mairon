@@ -7,13 +7,13 @@ al agente y a las herramientas.
 ## Estructura de datos
 
 - `datos.py`: información base del negocio y catálogo de productos empacados
-  en `DATOS_NEGOCIO`, además de la carga y normalización del Excel.
+  en `DATOS_NEGOCIO`, la carga y normalización del Excel, y el registro y
+  actualización concurrentes de pedidos.
 - `datos/datos_negocio_cafe_santo_domingo.xlsx`: menú de cafetería y detalles
   complementarios. La hoja `productos` debe incluir `producto`, `precio` y
   `categoria`; la hoja `informacion` debe incluir `tema` y `detalle`.
 - `agente.py`: conversación con el modelo.
 - `tools.py`: definición y despacho de herramientas del agente y cotización.
-- `pedidos.py`: registro de solicitudes en `datos/pedidos.xlsx`.
 
 Para actualizar productos, precios, servicios o contactos que provienen del
 Excel, edita el libro dentro de `datos/`. Para actualizar la información base o
