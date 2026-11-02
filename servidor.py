@@ -26,3 +26,4 @@ def chat(entrada: MensajeEntrada) -> dict[str, str]:
         "cliente_id": entrada.cliente_id,
         "respuesta": respuesta,
     }
+7

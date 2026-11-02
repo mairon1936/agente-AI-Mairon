@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#174d3a" />
+    <title>Asistente Café Santo Domingo</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <section class="intro">
+        <p class="eyebrow">CAFÉ SANTO DOMINGO</p>
+        <h1>Estamos para ayudarte</h1>
+        <p>
+          Consulta el menú o escríbenos por WhatsApp para recibir atención del
+          asistente.
+        </p>
+        <div class="qr-card">
+          <h2>Continúa en WhatsApp</h2>
+          <p>Escanea el código con la cámara de tu teléfono.</p>
+          <img id="qr-image" alt="Código QR para abrir WhatsApp" hidden />
+          <a id="whatsapp-link" class="button" hidden target="_blank" rel="noreferrer">
+            Abrir WhatsApp
+          </a>
+          <p id="qr-help" class="help" role="status">
+            Cargando código QR…
+          </p>
+        </div>
+      </section>
+
+      <section class="chat-card" aria-label="Chat con el asistente">
+        <header class="chat-header">
+          <div class="avatar" aria-hidden="true">C</div>
+          <div>
+            <h2>Asistente virtual</h2>
+            <p><span class="online-dot"></span> Atención automatizada</p>
+          </div>
+          <span id="service-status" class="status">Conectando…</span>
+        </header>
+        <div id="messages" class="messages" aria-live="polite">
+          <p class="bubble assistant">
+            ¡Hola! ¿En qué puedo ayudarte hoy?
+          </p>
+        </div>
+        <form id="chat-form" class="composer">
+          <label class="sr-only" for="message">Escribe tu mensaje</label>
+          <input
+            id="message"
+            name="message"
+            maxlength="2000"
+            placeholder="Escribe tu mensaje…"
+            autocomplete="off"
+            required
+          />
+          <button type="submit" aria-label="Enviar mensaje">Enviar</button>
+        </form>
+        <p class="privacy-note">
+          No incluyas información financiera o contraseñas en el chat.
+        </p>
+      </section>
+    </main>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

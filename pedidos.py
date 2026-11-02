@@ -91,12 +91,15 @@ def registrar_pedido(
     solicitud: str,
     deliveri: str = "Pendiente",
     cliente_id: str = "terminar",
+    contacto: str = "",
 ) -> int:
     """Guarda un pedido y devuelve la fila donde quedó registrado."""
     if not isinstance(solicitud, str) or not solicitud.strip():
         raise ValueError("La solicitud no puede estar vacía.")
     if deliveri not in {"Delivery", "Retiro", "Pendiente"}:
         raise ValueError("La modalidad debe ser Delivery, Retiro o Pendiente.")
+    if not isinstance(contacto, str):
+        raise ValueError("El contacto debe ser texto.")
 
     libro, hoja = _abrir_libro_pedidos()
     try:
@@ -104,7 +107,7 @@ def registrar_pedido(
         fila = hoja.max_row + 1
         hoja.cell(row=fila, column=1, value=fecha)
         hoja.cell(row=fila, column=2, value=cliente_id)
-        hoja.cell(row=fila, column=3, value="")
+        hoja.cell(row=fila, column=3, value=contacto)
         celda_solicitud = hoja.cell(row=fila, column=4, value=solicitud.strip())
         celda_solicitud.data_type = "s"
         hoja.cell(row=fila, column=5, value=deliveri)
@@ -163,9 +166,10 @@ def registrar_solicitud(
     solicitud: str,
     deliveri: str = "Pendiente",
     cliente_id: str = "terminar",
+    contacto: str = "",
 ) -> str:
     """Guarda una solicitud de pedido y confirma el registro."""
-    registrar_pedido(solicitud, deliveri, cliente_id)
+    registrar_pedido(solicitud, deliveri, cliente_id, contacto)
     return (
         "Tu solicitud quedó registrada. El registro no confirma que el negocio "
         "la haya recibido o aceptado."

@@ -31,6 +31,19 @@ uv sync
 uv run main.py
 ```
 
+Para iniciar la API HTTP, ejecuta:
+
+```powershell
+uv run uvicorn servidor:app --reload
+```
+
+Para iniciar el chat web y el puente de WhatsApp Business, sigue las
+instrucciones de [puente_whatsapp/README.md](./puente_whatsapp/README.md). El
+registro de instalación, configuración de Meta y pruebas está en
+[puente_whatsapp/PROCEDIMIENTOS_PUESTA_EN_MARCHA.md](./puente_whatsapp/PROCEDIMIENTOS_PUESTA_EN_MARCHA.md).
+La interfaz web se abre en `http://localhost:3000`; el QR permite iniciar una
+conversación con el número de WhatsApp Business configurado.
+
 También puedes iniciar la aplicación desde PowerShell con:
 
 ```powershell

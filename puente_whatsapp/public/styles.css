@@ -1,0 +1,267 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  color: #1d2b24;
+  background: #f3f5f0;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(ellipse at 12% 10%, #e0eadf 0, transparent 36%),
+    #f3f5f0;
+}
+
+.layout {
+  width: min(1120px, calc(100% - 40px));
+  min-height: 100vh;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1fr);
+  align-items: center;
+  gap: clamp(36px, 8vw, 100px);
+  padding: 48px 0;
+}
+
+.intro {
+  max-width: 460px;
+}
+
+.eyebrow {
+  color: #39805f;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+h1 {
+  margin: 16px 0;
+  font-size: clamp(2.5rem, 5vw, 4.2rem);
+  line-height: 1.04;
+  letter-spacing: -0.05em;
+}
+
+.intro > p:not(.eyebrow) {
+  color: #67736b;
+  font-size: 1.08rem;
+  line-height: 1.65;
+}
+
+.qr-card,
+.chat-card {
+  border: 1px solid #e4e9e2;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 20px 60px #253c2c12;
+}
+
+.qr-card {
+  margin-top: 40px;
+  padding: 24px;
+}
+
+.qr-card h2,
+.chat-header h2 {
+  margin: 0;
+  font-size: 1.08rem;
+}
+
+.qr-card > p {
+  margin: 8px 0 16px;
+  color: #758078;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+#qr-image {
+  display: block;
+  width: 210px;
+  height: 210px;
+  margin: 14px auto;
+  image-rendering: pixelated;
+}
+
+.help {
+  text-align: center;
+}
+
+.button,
+.composer button {
+  border: 0;
+  border-radius: 10px;
+  background: #1d6b4c;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button {
+  display: block;
+  width: fit-content;
+  margin: 16px auto 0;
+  padding: 11px 18px;
+}
+
+.chat-card {
+  display: flex;
+  min-height: 640px;
+  max-height: 760px;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  border-bottom: 1px solid #edf0ec;
+}
+
+.avatar {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e5f1e8;
+  color: #1d6b4c;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.chat-header p {
+  margin: 5px 0 0;
+  color: #7a857e;
+  font-size: 0.8rem;
+}
+
+.online-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: #4aa675;
+}
+
+.status {
+  margin-left: auto;
+  color: #38815b;
+  font-size: 0.75rem;
+}
+
+.status-error {
+  color: #a53d3d;
+}
+
+.messages {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding: 22px;
+}
+
+.bubble {
+  width: fit-content;
+  max-width: 85%;
+  margin: 0;
+  padding: 12px 15px;
+  border-radius: 15px;
+  font-size: 0.94rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.assistant {
+  align-self: flex-start;
+  border: 1px solid #edf0ec;
+  border-bottom-left-radius: 4px;
+  background: #fafbf9;
+}
+
+.user {
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+  background: #e5f1e8;
+}
+
+.composer {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px 10px;
+}
+
+.composer input {
+  min-width: 0;
+  flex: 1;
+  padding: 13px 15px;
+  border: 1px solid #e0e6df;
+  border-radius: 11px;
+  font: inherit;
+}
+
+.composer input:focus {
+  border-color: #58a27d;
+  outline: 3px solid #58a27d22;
+}
+
+.composer button {
+  padding: 0 18px;
+}
+
+.composer button:disabled,
+.composer input:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.privacy-note {
+  margin: 0;
+  padding: 0 20px 18px;
+  color: #8a938c;
+  font-size: 0.74rem;
+  text-align: center;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 780px) {
+  .layout {
+    width: min(560px, calc(100% - 28px));
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 36px 0;
+  }
+
+  .intro {
+    max-width: none;
+  }
+
+  .qr-card {
+    margin-top: 24px;
+  }
+
+  .chat-card {
+    min-height: 600px;
+  }
+}

@@ -70,9 +70,10 @@ herramientas = [
             "name": "calcular_pedidos",
             "description": (
                 "Usa siempre esta herramienta cuando el cliente pregunte cuánto cuesta "
-                "o cuánto sería el precio de uno o varios productos del catálogo o del "
-                "menú de cafetería. Calcula el total con los precios de referencia; "
-                "no inventes precios."
+                "o cuánto sería el precio de uno o varios productos. Calcula con los "
+                "precios del archivo datos_negocio_cafe_santo_domingo.xlsx; si un "
+                "producto no figura allí, consulta fuentes de internet y presenta "
+                "cualquier precio encontrado como referencia no confirmada."
             ),
             "parameters": {
                 "type": "object",
@@ -252,6 +253,96 @@ def _buscar_producto_en_fuente_oficial(producto: str) -> bool:
     return False
 
 
+def buscar_precio_en_internet(producto: str) -> str:
+    """Busca referencias de precio en internet cuando el producto no está en Excel."""
+    api_key = os.getenv("GOOGLE_CSE_API_KEY")
+    search_engine_id = os.getenv("GOOGLE_CSE_ID")
+    if not api_key or not search_engine_id:
+        return (
+            f"El producto '{producto}' no aparece en el menú del Excel. "
+            "No puedo consultar precios en internet porque Google Custom Search "
+            "no está configurado (GOOGLE_CSE_API_KEY y GOOGLE_CSE_ID)."
+        )
+
+    parametros = urlencode(
+        {
+            "key": api_key,
+            "cx": search_engine_id,
+            "q": f"{producto} precio RD$",
+            "num": 5,
+        }
+    )
+    solicitud = Request(
+        f"https://www.googleapis.com/customsearch/v1?{parametros}",
+        headers={"Accept": "application/json"},
+    )
+    try:
+        with urlopen(solicitud, timeout=10) as respuesta:
+            resultados = json.loads(respuesta.read().decode("utf-8"))
+    except HTTPError as error:
+        return (
+            f"El producto '{producto}' no aparece en el menú del Excel. "
+            f"La búsqueda web respondió con HTTP {error.code}."
+        )
+    except (URLError, TimeoutError, OSError):
+        return (
+            f"El producto '{producto}' no aparece en el menú del Excel. "
+            "No se pudo conectar con la búsqueda web."
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return (
+            f"El producto '{producto}' no aparece en el menú del Excel. "
+            "La búsqueda web devolvió una respuesta inválida."
+        )
+
+    if not isinstance(resultados, dict):
+        return (
+            f"El producto '{producto}' no aparece en el menú del Excel. "
+            "La búsqueda web devolvió una respuesta inválida."
+        )
+    elementos = resultados.get("items", [])
+    if not isinstance(elementos, list):
+        return (
+            f"El producto '{producto}' no aparece en el menú del Excel. "
+            "La búsqueda web devolvió una respuesta inválida."
+        )
+    if not elementos:
+        return (
+            f"El producto '{producto}' no aparece en el menú del Excel y "
+            "no encontré referencias de precio en internet."
+        )
+
+    fuentes = []
+    for elemento in elementos:
+        if not isinstance(elemento, dict):
+            continue
+        titulo = elemento.get("title")
+        enlace = elemento.get("link")
+        fragmento = elemento.get("snippet")
+        if not isinstance(enlace, str) or not enlace.startswith(
+            ("https://", "http://")
+        ):
+            continue
+        detalle = f"- {titulo or enlace}"
+        if isinstance(fragmento, str) and fragmento:
+            detalle += f": {fragmento}"
+        detalle += f" ({enlace})"
+        fuentes.append(detalle)
+
+    if not fuentes:
+        return (
+            f"El producto '{producto}' no aparece en el menú del Excel y "
+            "no encontré fuentes web utilizables."
+        )
+
+    return (
+        f"El producto '{producto}' no aparece en el menú del Excel. "
+        "Encontré estas posibles referencias en internet; verifica el precio "
+        "y su vigencia directamente con cada comercio:\n"
+        + "\n".join(fuentes)
+    )
+
+
 def verificar_productos_pedido(
     productos_solicitados: list[str],
     datos: dict[str, Any] | None = None,
@@ -278,12 +369,11 @@ def _formatear_precio(precio: float) -> str:
 def calcular_pedidos(items: Iterable[ItemPedido]) -> str:
     """Calcula el total referencial de una lista de productos y cantidades."""
     datos = cargar_datos_negocio()
-    productos_menu = (
-        datos["catalogo"]["productos"] + datos["menu_cafeteria"]["productos"]
-    )
+    productos_menu = datos["menu_cafeteria"]["productos"]
     detalle: list[str] = []
     total_minimo = 0.0
     total_maximo = 0.0
+    hay_productos_fuera_del_excel = False
 
     for item in items:
         nombre_producto = item.get("producto") or item.get("productos")
@@ -306,7 +396,9 @@ def calcular_pedidos(items: Iterable[ItemPedido]) -> str:
                 coincidencias.append(producto)
 
         if not coincidencias:
-            return f"El producto '{producto_solicitado}' no está en el menú."
+            hay_productos_fuera_del_excel = True
+            detalle.append(buscar_precio_en_internet(nombre_producto))
+            continue
 
         coincidencias_exactas = [
             producto
@@ -353,11 +445,23 @@ def calcular_pedidos(items: Iterable[ItemPedido]) -> str:
     if total_minimo != total_maximo:
         texto_total += f"–{_formatear_precio(total_maximo)}"
 
-    return (
-        "\n".join(detalle)
-        + f"\nTotal referencial: {texto_total}."
-        "\nLos precios no están confirmados y pueden cambiar; verifica la vigencia con el negocio."
-    )
+    respuesta = "\n".join(detalle)
+    if hay_productos_fuera_del_excel:
+        if total_minimo > 0:
+            respuesta += (
+                f"\nSubtotal de productos encontrados en el Excel: {texto_total}."
+            )
+        respuesta += (
+            "\nNo se calculó un total completo porque hay productos fuera "
+            "del Excel."
+        )
+    else:
+        respuesta += (
+            f"\nTotal referencial: {texto_total}."
+            "\nLos precios no están confirmados y pueden cambiar; "
+            "verifica la vigencia con el negocio."
+        )
+    return respuesta
 
 
 def ejecutar_herramientas(
