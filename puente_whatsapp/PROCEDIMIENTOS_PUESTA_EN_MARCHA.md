@@ -279,8 +279,9 @@ cuenta de Meta, un webhook público y credenciales vigentes.
 
 - El agente acepta mensajes de texto; audio, imágenes y otros adjuntos no se
   envían al agente.
-- El historial de conversación reside en memoria del proceso Python y se pierde
-  al reiniciar. Esta configuración está pensada para una única instancia.
+- Los historiales y sesiones fiscales se guardan en SQLite y el puente conserva
+  los webhooks en una cola durable. Esta configuración está pensada para una
+  única instancia de cada servicio.
 - El QR inicia un chat con el número del negocio. Compartir la web en Internet
   requiere alojar la interfaz; ejecutar `localhost` solo la hace visible en el
   equipo local.
@@ -288,3 +289,5 @@ cuenta de Meta, un webhook público y credenciales vigentes.
   mediante HTTPS y tiene configuradas las credenciales de Cloud API.
 - Antes de uso público, configura HTTPS, token permanente/adecuado, permisos,
   límites del proveedor y una política de privacidad acorde al negocio.
+- Para reinicio automático, healthchecks y programación de respaldos, sigue el
+  [informe de continuidad operativa](../informe_continuidad_operativa.md).

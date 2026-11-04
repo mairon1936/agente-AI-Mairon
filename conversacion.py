@@ -1,19 +1,14 @@
-from agente import Agente
+from agente_facturacion import AgenteFacturacionElectronica
+from sistem_prompts import MENSAJE_BIENVENIDA
 
 
-def iniciar_conversacion(agente: Agente) -> None:
-    print(f"¡Hola! Te damos la bienvenida a {agente.nombre_negocio}.")
+def iniciar_conversacion(agente: AgenteFacturacionElectronica) -> None:
+    print(f"*{MENSAJE_BIENVENIDA}*")
     print(
-        "Menú de atención:\n"
-        "1. Ver productos y presentaciones\n"
-        "2. Consultar precios\n"
-        "3. Recibir una recomendación de café\n"
-        "4. Consultar sucursales y teléfonos\n"
-        "5. Consultar servicios para oficinas o eventos\n"
-        "6. Redactar una sugerencia\n"
-        "7. Ver menú de cafetería\n"
-        "8. Realizar un pedido\n"
-        "9. Solicitar delivery\n"
+        "Opciones de consulta:\n"
+        "1. Información general sobre facturación electrónica\n"
+        "2. Información disponible del sistema\n"
+        "3. Consultar qué información oficial está pendiente\n"
         "Escribe un número, haz tu pregunta o escribe 'salir' para terminar."
     )
 

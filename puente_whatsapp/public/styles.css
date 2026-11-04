@@ -54,7 +54,10 @@ h1 {
   line-height: 1.65;
 }
 
+.quick-menu,
+.share-card,
 .qr-card,
+.install-card,
 .chat-card {
   border: 1px solid #e4e9e2;
   border-radius: 22px;
@@ -67,7 +70,71 @@ h1 {
   padding: 24px;
 }
 
+.quick-menu {
+  margin-top: 24px;
+  padding: 18px 24px;
+}
+
+.quick-menu ol {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding-left: 24px;
+  color: #39805f;
+  font-weight: 700;
+}
+
+.quick-menu a {
+  color: #1d6b4c;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.share-card {
+  margin-top: 18px;
+  padding: 20px 24px;
+}
+
+.share-card p {
+  margin: 8px 0 0;
+  color: #758078;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.share-card code {
+  display: block;
+  margin-top: 12px;
+  overflow-wrap: anywhere;
+  color: #1d6b4c;
+}
+
+.share-card code[hidden],
+.copy-button[hidden] {
+  display: none;
+}
+
+.copy-button {
+  border: 0;
+  font: inherit;
+}
+
+.install-card {
+  margin-top: 18px;
+  padding: 20px 24px;
+}
+
+.install-card p {
+  margin: 8px 0 0;
+  color: #758078;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.quick-menu h2,
+.share-card h2,
 .qr-card h2,
+.install-card h2,
 .chat-header h2 {
   margin: 0;
   font-size: 1.08rem;
@@ -109,6 +176,17 @@ h1 {
   width: fit-content;
   margin: 16px auto 0;
   padding: 11px 18px;
+}
+
+.button[hidden],
+#qr-image[hidden],
+.install-button[hidden] {
+  display: none;
+}
+
+.install-button {
+  border: 0;
+  font: inherit;
 }
 
 .chat-card {
@@ -262,6 +340,11 @@ h1 {
   }
 
   .chat-card {
-    min-height: 600px;
+    min-height: min(600px, 72vh);
+  }
+
+  .composer {
+    padding-right: 14px;
+    padding-left: 14px;
   }
 }

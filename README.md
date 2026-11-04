@@ -1,25 +1,29 @@
-# AI-mairon
+# Asistente de Facturación Electrónica
 
-Asistente de Café Santo Domingo. Los módulos de la aplicación no almacenan los
-datos del negocio: `datos.py` los carga desde sus archivos fuente y los entrega
-al agente y a las herramientas.
+Asistente del Sistema de Facturación Electrónica RD. Sin configurar la
+integración opcional, responde consultas informativas y no accede a los libros
+del negocio. El flujo de facturación implementado se conecta a una API interna
+por contrato; el simulador local solo sirve para pruebas y no emite comprobantes
+fiscales válidos ni se conecta a la DGII.
 
-## Estructura de datos
+## Estado de la información
 
-- `datos.py`: información base del negocio y catálogo de productos empacados
-  en `DATOS_NEGOCIO`, la carga y normalización del Excel, y el registro y
-  actualización concurrentes de pedidos.
-- `datos/datos_negocio_cafe_santo_domingo.xlsx`: menú de cafetería y detalles
-  complementarios. La hoja `productos` debe incluir `producto`, `precio` y
-  `categoria`; la hoja `informacion` debe incluir `tema` y `detalle`.
-- `agente.py`: conversación con el modelo.
-- `tools.py`: definición y despacho de herramientas del agente y cotización.
+- `sistem_prompts.py`: identidad, saludo e instrucciones del asistente.
+- `agente_facturacion.py`: modo informativo, sin acceso a los archivos del
+  negocio.
+- `facturacion/`: herramientas de búsqueda, creación de borradores, botones de
+  confirmación/cancelación, idempotencia, consulta de estado, envío de PDF y
+  contrato pendiente de integración con el motor e-CF.
+- `facturacion/simulador.py`: API local de prueba; sus clientes, productos,
+  montos y PDF son ficticios.
+- `datos.py` y los archivos dentro de `datos/`: datos de la aplicación anterior,
+  conservados sin cambios y fuera de la ruta del nuevo asistente.
 
-Para actualizar productos, precios, servicios o contactos que provienen del
-Excel, edita el libro dentro de `datos/`. Para actualizar la información base o
-el catálogo de productos empacados, edita `DATOS_NEGOCIO` en `datos.py`.
-`cargar_datos_negocio()` combina ambas fuentes; los precios de referencia del
-menú no se consideran tarifas confirmadas.
+La conexión a una API de facturación real solo se activa cuando se configuran
+todas las variables `FACTURACION_*`, los números autorizados y
+`AGENT_BRIDGE_TOKEN`. Sin ellas, el asistente conserva el modo informativo. El
+motor DGII y la certificación oficial no están implementados; el simulador nunca
+debe configurarse para producción.
 
 ## Ejecución
 
@@ -37,12 +41,72 @@ Para iniciar la API HTTP, ejecuta:
 uv run uvicorn servidor:app --reload
 ```
 
-Para iniciar el chat web y el puente de WhatsApp Business, sigue las
+La API del agente admite hasta 500 solicitudes de chat procesándose en paralelo
+por proceso; las solicitudes adicionales esperan turno. Esto no aumenta las
+cuotas del proveedor del modelo ni reemplaza el escalado de la infraestructura.
+En producción, utiliza HTTPS y valida capacidad y límites del proveedor antes
+de recibir tráfico real. Las conversaciones y sesiones fiscales se guardan en
+SQLite, con retención predeterminada de 90 días. El puente guarda los webhooks
+pendientes en disco y reintenta errores transitorios; utiliza una sola instancia
+del puente y un solo worker de API para este almacenamiento local.
+
+Para desplegar los dos servicios en Docker con reinicio automático, healthchecks
+y volumen persistente, consulta [informe_continuidad_operativa.md](./informe_continuidad_operativa.md).
+En el servidor, protege `.env`, crea el directorio `backups` con acceso
+restringido y programa `scripts/backup.sh` (Linux) o `scripts/backup.ps1`
+(Windows). El respaldo online de SQLite y la cola se ejecutan con:
+
+```powershell
+docker compose run --rm backup
+```
+
+Los healthchecks detectan fallas y `restart: unless-stopped` recupera procesos
+que terminan, pero Docker no reinicia automáticamente un contenedor solo por
+marcarlo como `unhealthy`; configura además un monitor externo con alertas y un
+procedimiento de recuperación.
+
+Para probar el flujo de facturación únicamente con datos ficticios, configura
+en `.env` la URL `http://127.0.0.1:19001`, una clave de prueba compartida para
+`FACTURACION_API_KEY`, un token aleatorio para `AGENT_BRIDGE_TOKEN` y números
+de prueba separados por coma en `FACTURACION_NUMEROS_AUTORIZADOS`. Luego
+inicia en terminales separadas:
+
+```powershell
+uv run uvicorn facturacion.simulador:app --host 127.0.0.1 --port 19001
+uv run uvicorn servidor:app --port 8000
+```
+
+El simulador acepta el cliente `131000001` y los productos `P001` y `P002`.
+Úsalo solo en pruebas: los datos, aceptación DGII y comprobantes PDF son
+simulados. Para probar botones y documentos de WhatsApp también hacen falta las
+credenciales Cloud API ya descritas en esta guía.
+
+Para configurar el flujo con una API fiscal real en el equipo local, ejecuta
+`uv run python configurar_facturacion.py`. El programa pide la URL, números
+autorizados y claves ocultando la entrada de secretos; genera el token de
+puente y actualiza `.env` sin mostrar sus valores. `.env` no se debe subir a
+Git. En producción, guarda los mismos valores directamente como secretos
+privados en el proveedor de alojamiento: este asistente no publica servicios ni
+crea secretos en una cuenta de hosting.
+
+Para iniciar el chat web y el puente de WhatsApp, sigue las
 instrucciones de [puente_whatsapp/README.md](./puente_whatsapp/README.md). El
 registro de instalación, configuración de Meta y pruebas está en
 [puente_whatsapp/PROCEDIMIENTOS_PUESTA_EN_MARCHA.md](./puente_whatsapp/PROCEDIMIENTOS_PUESTA_EN_MARCHA.md).
-La interfaz web se abre en `http://localhost:3000`; el QR permite iniciar una
-conversación con el número de WhatsApp Business configurado.
+La interfaz incluye un menú numerado, chat, QR de WhatsApp y soporte para
+instalarse como PWA. Para generar una URL HTTPS pública, sigue el
+[informe de despliegue](./informe_despliegue_agente.md) y configura el número
+real de WhatsApp en el entorno del servidor.
+
+Para iniciar la API y la interfaz web desde una sola terminal y abrir el
+navegador automáticamente, ejecuta desde la raíz:
+
+```powershell
+python open.py
+```
+
+Pulsa `Ctrl+C` en esa terminal para detener los servicios que inició el programa.
+Si ya estaban activos, el programa los reutiliza y no los detiene.
 
 También puedes iniciar la aplicación desde PowerShell con:
 
@@ -53,10 +117,6 @@ También puedes iniciar la aplicación desde PowerShell con:
 No ejecutes `python main.py` con el Python global: debe usarse el entorno
 `.venv` del proyecto. En VS Code, las terminales nuevas activan ese entorno
 automáticamente. La aplicación requiere la variable de entorno `GROQ_API_KEY`.
-Para pedidos con productos que no aparecen en el catálogo local, configura
-`GOOGLE_CSE_API_KEY` y `GOOGLE_CSE_ID` en `.env`: el agente los busca en Google
-Custom Search y solo acepta resultados publicados en el sitio oficial de INDUBAN.
-Si no puede verificarlos, no registra el pedido.
 
 ## Protección de credenciales
 

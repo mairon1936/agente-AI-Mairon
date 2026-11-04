@@ -6,14 +6,23 @@ require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
 const express = require("express");
 const { rateLimit } = require("express-rate-limit");
 const QRCode = require("qrcode");
+const { DurableMessageQueue } = require("./durable-queue");
 
 const app = express();
 const publicDirectory = path.join(__dirname, "public");
 const agentApiUrl = process.env.AGENT_API_URL || "http://127.0.0.1:8000/chat";
+const bridgeDataDirectory =
+  process.env.BRIDGE_DATA_DIR || path.resolve(__dirname, "..", "data", "bridge");
+const messageQueue = new DurableMessageQueue(
+  path.join(bridgeDataDirectory, "whatsapp-queue"),
+);
 const handledMessageIds = new Map();
 const inFlightMessages = new Map();
 const MAX_HANDLED_MESSAGES = 10000;
 const MESSAGE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_MESSAGE_ATTEMPTS = 5;
+let queueWorkerReady = false;
+let stopping = false;
 
 app.use(
   express.json({
@@ -71,21 +80,33 @@ function constantTimeStringMatch(actual, expected) {
   );
 }
 
-async function askAgent(clienteId, mensaje) {
+async function askAgent(clienteId, mensaje, accionId) {
+  const headers = { "content-type": "application/json" };
+  if (process.env.AGENT_BRIDGE_TOKEN) {
+    headers["x-agent-bridge-token"] = process.env.AGENT_BRIDGE_TOKEN;
+  }
+  const body = { cliente_id: clienteId, mensaje };
+  if (accionId) {
+    body.accion_id = accionId;
+  }
   const response = await fetch(agentApiUrl, {
     method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ cliente_id: clienteId, mensaje }),
+    headers,
+    body: JSON.stringify(body),
     signal: AbortSignal.timeout(45000),
   });
   if (!response.ok) {
     throw new Error(`La API del agente respondió HTTP ${response.status}.`);
   }
   const result = await response.json();
-  if (typeof result.respuesta !== "string" || !result.respuesta.trim()) {
+  if (
+    (typeof result.respuesta !== "string" || !result.respuesta.trim()) &&
+    !result.interaccion &&
+    !result.documento
+  ) {
     throw new Error("La API del agente devolvió una respuesta vacía o inválida.");
   }
-  return result.respuesta;
+  return result;
 }
 
 async function sendWhatsAppMessage(recipient, message) {
@@ -127,6 +148,135 @@ async function sendWhatsAppMessage(recipient, message) {
   }
 }
 
+async function sendWhatsAppButtons(recipient, message, draftId) {
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  const version = process.env.WHATSAPP_GRAPH_API_VERSION;
+  if (!phoneNumberId || !accessToken || !version) {
+    throw new Error("Falta configurar WhatsApp Cloud API para enviar botones.");
+  }
+  if (!/^v\d+\.\d+$/.test(version)) {
+    throw new Error("WHATSAPP_GRAPH_API_VERSION debe tener el formato vNN.N.");
+  }
+  if (typeof draftId !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(draftId)) {
+    throw new Error("El identificador del borrador es inválido.");
+  }
+  if (typeof message !== "string" || message.length > 1024) {
+    throw new Error("El resumen excede el límite de botones de WhatsApp.");
+  }
+  const response = await fetch(
+    `https://graph.facebook.com/${version}/${encodeURIComponent(phoneNumberId)}/messages`,
+    {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: recipient,
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text: message },
+          action: {
+            buttons: [
+              {
+                type: "reply",
+                reply: { id: `CONFIRMAR:${draftId}`, title: "Emitir" },
+              },
+              {
+                type: "reply",
+                reply: { id: `CANCELAR:${draftId}`, title: "Cancelar" },
+              },
+            ],
+          },
+        },
+      }),
+      signal: AbortSignal.timeout(20000),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`WhatsApp Cloud API respondió HTTP ${response.status}.`);
+  }
+}
+
+async function sendWhatsAppDocument(recipient, documento) {
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  const version = process.env.WHATSAPP_GRAPH_API_VERSION;
+  if (!phoneNumberId || !accessToken || !version) {
+    throw new Error("Falta configurar WhatsApp Cloud API para enviar documentos.");
+  }
+  if (!/^v\d+\.\d+$/.test(version)) {
+    throw new Error("WHATSAPP_GRAPH_API_VERSION debe tener el formato vNN.N.");
+  }
+  if (
+    typeof documento.contenido_base64 !== "string" ||
+    documento.contenido_base64.length > 16 * 1024 * 1024 ||
+    !/^[A-Za-z0-9+/]*={0,2}$/.test(documento.contenido_base64)
+  ) {
+    throw new Error("El PDF recibido del agente es inválido o demasiado grande.");
+  }
+  const contenido = Buffer.from(documento.contenido_base64, "base64");
+  if (!contenido.subarray(0, 5).equals(Buffer.from("%PDF-"))) {
+    throw new Error("El agente no devolvió un PDF válido.");
+  }
+  const nombre = path.basename(String(documento.nombre || "factura.pdf"))
+    .replace(/[^A-Za-z0-9._-]/g, "_")
+    .slice(0, 120);
+  const form = new FormData();
+  form.append("messaging_product", "whatsapp");
+  form.append("type", "application/pdf");
+  form.append(
+    "file",
+    new Blob([contenido], { type: "application/pdf" }),
+    nombre,
+  );
+  const mediaResponse = await fetch(
+    `https://graph.facebook.com/${version}/${encodeURIComponent(phoneNumberId)}/media`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${accessToken}` },
+      body: form,
+      signal: AbortSignal.timeout(20000),
+    },
+  );
+  if (!mediaResponse.ok) {
+    throw new Error(`WhatsApp Cloud API respondió HTTP ${mediaResponse.status}.`);
+  }
+  const media = await mediaResponse.json();
+  if (typeof media.id !== "string" || !media.id) {
+    throw new Error("WhatsApp Cloud API no devolvió el identificador del PDF.");
+  }
+  const sendResponse = await fetch(
+    `https://graph.facebook.com/${version}/${encodeURIComponent(phoneNumberId)}/messages`,
+    {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: recipient,
+        type: "document",
+        document: {
+          id: media.id,
+          filename: nombre,
+          caption: String(documento.caption || "").slice(0, 1024),
+        },
+      }),
+      signal: AbortSignal.timeout(20000),
+    },
+  );
+  if (!sendResponse.ok) {
+    throw new Error(`WhatsApp Cloud API respondió HTTP ${sendResponse.status}.`);
+  }
+}
+
 function extractTextMessages(body) {
   const entries = Array.isArray(body?.entry) ? body.entry : [];
   return entries.flatMap((entry) => {
@@ -135,18 +285,31 @@ function extractTextMessages(body) {
       const messages = Array.isArray(change?.value?.messages)
         ? change.value.messages
         : [];
-      return messages
-        .filter(
-          (message) =>
-            message?.type === "text" &&
-            typeof message?.from === "string" &&
-            typeof message?.text?.body === "string",
-        )
-        .map((message) => ({
-          id: message.id,
-          from: message.from,
-          text: message.text.body,
-        }));
+      return messages.flatMap((message) => {
+        if (
+          typeof message?.id !== "string" ||
+          typeof message?.from !== "string"
+        ) {
+          return [];
+        }
+        if (message.type === "text" && typeof message.text?.body === "string") {
+          return [{ id: message.id, from: message.from, text: message.text.body }];
+        }
+        if (
+          message.type === "interactive" &&
+          typeof message.interactive?.button_reply?.id === "string"
+        ) {
+          return [
+            {
+              id: message.id,
+              from: message.from,
+              text: message.interactive.button_reply.title || "",
+              accionId: message.interactive.button_reply.id,
+            },
+          ];
+        }
+        return [];
+      });
     });
   });
 }
@@ -177,11 +340,37 @@ async function handleWhatsAppMessage(message) {
     if (!text || !/^[1-9]\d{6,19}$/.test(message.from)) {
       return;
     }
-    const answer =
-      text.length > 2000
-        ? "Tu mensaje supera el límite de 2000 caracteres. Envíalo en varios mensajes más cortos."
-        : await askAgent(`whatsapp:${message.from}`, text);
-    await sendWhatsAppMessage(message.from, answer);
+    if (text.length > 2000) {
+      await sendWhatsAppMessage(
+        message.from,
+        "Tu mensaje supera el límite de 2000 caracteres. Envíalo en varios mensajes más cortos.",
+      );
+    } else {
+      const resultado = await askAgent(
+        `whatsapp:${message.from}`,
+        text || " ",
+        message.accionId,
+      );
+      if (resultado.interaccion?.tipo === "confirmar_factura") {
+        await sendWhatsAppButtons(
+          message.from,
+          resultado.interaccion.texto,
+          resultado.interaccion.borrador_id,
+        );
+      } else if (resultado.documento) {
+        await sendWhatsAppDocument(message.from, resultado.documento);
+        const draftId = message.accionId?.split(":")[1];
+        if (draftId) {
+          await askAgent(
+            `whatsapp:${message.from}`,
+            "El documento fue enviado.",
+            `ENTREGADA:${draftId}`,
+          );
+        }
+      } else if (resultado.respuesta) {
+        await sendWhatsAppMessage(message.from, resultado.respuesta);
+      }
+    }
     if (typeof message.id === "string") {
       handledMessageIds.set(message.id, Date.now());
       pruneMessageCache();
@@ -214,6 +403,28 @@ app.get("/health", (request, response) => {
   response.json({ estado: "ok" });
 });
 
+app.get("/health/ready", async (request, response) => {
+  try {
+    if (!queueWorkerReady) {
+      response.status(503).json({ estado: "iniciando" });
+      return;
+    }
+    const healthUrl = new URL("/salud", agentApiUrl).toString();
+    const agentHealth = await fetch(healthUrl, {
+      signal: AbortSignal.timeout(3000),
+    });
+    const cola = await messageQueue.counts();
+    if (!agentHealth.ok) {
+      response.status(503).json({ estado: "agente_no_disponible", cola });
+      return;
+    }
+    response.json({ estado: "listo", cola });
+  } catch (error) {
+    console.error("No se pudo comprobar la preparación del servicio:", error.message);
+    response.status(503).json({ estado: "no_listo" });
+  }
+});
+
 app.get("/api/status", (request, response) => {
   const publicNumber = process.env.WHATSAPP_PUBLIC_NUMBER || "";
   response.json({
@@ -240,7 +451,7 @@ app.get("/api/qr", async (request, response, next) => {
   } catch (error) {
     if (error instanceof TypeError) {
       response.status(503).json({
-        error: "Configura WHATSAPP_PUBLIC_NUMBER en el archivo .env.",
+        error: "WhatsApp no está disponible en este momento.",
       });
       return;
     }
@@ -257,8 +468,8 @@ app.post("/api/chat", chatLimiter, async (request, response) => {
     return;
   }
   try {
-    const respuesta = await askAgent(clienteId, mensaje.trim());
-    response.json({ cliente_id: clienteId, respuesta });
+    const resultado = await askAgent(clienteId, mensaje.trim());
+    response.json({ cliente_id: clienteId, ...resultado });
   } catch (error) {
     console.error("No se pudo completar el mensaje web:", error.message);
     response.status(502).json({
@@ -300,14 +511,12 @@ app.post("/webhook", async (request, response) => {
   const messages = extractTextMessages(request.body);
   try {
     for (const message of messages) {
-      await handleWhatsAppMessage(message);
+      await messageQueue.enqueue(message);
     }
     response.sendStatus(200);
   } catch (error) {
-    console.error("No se pudo procesar el webhook de WhatsApp:", error.message);
-    response.status(502).json({
-      error: "No se pudo procesar el mensaje entrante; WhatsApp puede reintentar.",
-    });
+    console.error("No se pudo guardar el mensaje entrante:", error.message);
+    response.status(503).json({ error: "No se pudo guardar el mensaje para procesarlo." });
   }
 });
 
@@ -321,13 +530,82 @@ app.use((error, request, response, next) => {
 });
 
 if (require.main === module) {
-  const port = Number(process.env.BRIDGE_PORT || 3000);
+  const port = Number(process.env.PORT || process.env.BRIDGE_PORT || 3000);
+  const host = process.env.HOST || (process.env.PORT ? "0.0.0.0" : "127.0.0.1");
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error("BRIDGE_PORT debe ser un puerto entre 1 y 65535.");
+    throw new Error("PORT o BRIDGE_PORT debe ser un puerto entre 1 y 65535.");
   }
-  app.listen(port, "127.0.0.1", () => {
-    console.log(`Chat web y puente listos en http://localhost:${port}`);
+  void (async () => {
+    await messageQueue.initialize();
+    queueWorkerReady = true;
+    const server = app.listen(port, host, () => {
+      console.log(`Chat web y puente listos en el puerto ${port}.`);
+    });
+    void processWebhookQueue();
+    const stop = () => {
+      stopping = true;
+      server.close();
+    };
+    process.once("SIGINT", stop);
+    process.once("SIGTERM", stop);
+  })().catch((error) => {
+    console.error("No se pudo iniciar el puente de WhatsApp:", error.message);
+    process.exitCode = 1;
   });
+}
+
+async function processWebhookQueue() {
+  let processedSincePrune = 0;
+  let lastPrune = Date.now();
+  while (!stopping) {
+    try {
+      const item = await messageQueue.takeNext();
+      if (!item) {
+        if (Date.now() - lastPrune >= 60 * 60 * 1000) {
+          await messageQueue.prune();
+          lastPrune = Date.now();
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        continue;
+      }
+      try {
+        await handleWhatsAppMessage(item.job);
+        await messageQueue.complete(item.processing);
+      } catch (error) {
+        console.error("No se pudo procesar un mensaje entrante:", error.message);
+        if (item.job.attempts + 1 >= MAX_MESSAGE_ATTEMPTS) {
+          await messageQueue.fail(item.job, item.processing);
+          try {
+            await sendWhatsAppMessage(
+              item.job.from,
+              "No pude procesar tu mensaje después de varios intentos. Un operador debe revisarlo.",
+            );
+          } catch (sendError) {
+            console.error(
+              "No se pudo enviar el aviso de error de WhatsApp:",
+              sendError.message,
+            );
+          }
+        } else {
+          const delay = await messageQueue.retry(
+            item.job,
+            item.processing,
+            error,
+          );
+          console.error(`Se reintentará el mensaje en ${delay} ms.`);
+        }
+      }
+      processedSincePrune += 1;
+      if (processedSincePrune >= 100) {
+        await messageQueue.prune();
+        lastPrune = Date.now();
+        processedSincePrune = 0;
+      }
+    } catch (error) {
+      console.error("Falló el trabajador de la cola de WhatsApp:", error.message);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+  }
 }
 
 module.exports = {
@@ -335,5 +613,7 @@ module.exports = {
   buildWhatsAppLink,
   extractTextMessages,
   isValidChatInput,
+  messageQueue,
+  processWebhookQueue,
   verifyMetaSignature,
 };

@@ -1,17 +1,17 @@
 import sys
 
-from agente import Agente
+from agente_facturacion import AgenteFacturacionElectronica
 from conversacion import iniciar_conversacion
-from sistem_prompts import SYSTEM_PROMPT
 
 
 def main() -> None:
 	"""Punto de entrada de la aplicacion."""
 	sys.stdout.reconfigure(encoding="utf-8")
 	sys.stderr.reconfigure(encoding="utf-8")
-	agente = Agente(SYSTEM_PROMPT)
+	agente = AgenteFacturacionElectronica()
 	iniciar_conversacion(agente)
 
 
 if __name__ == "__main__":
+	
 	main()

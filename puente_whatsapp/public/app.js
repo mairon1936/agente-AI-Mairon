@@ -5,6 +5,67 @@ const status = document.querySelector("#service-status");
 const qrImage = document.querySelector("#qr-image");
 const qrHelp = document.querySelector("#qr-help");
 const whatsappLink = document.querySelector("#whatsapp-link");
+const installButton = document.querySelector("#install-button");
+const installHelp = document.querySelector("#install-help");
+const publicUrl = document.querySelector("#public-url");
+const publicUrlHelp = document.querySelector("#public-url-help");
+const copyUrlButton = document.querySelector("#copy-url-button");
+let installPrompt;
+
+if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+  installHelp.textContent =
+    "En Safari, pulsa Compartir y selecciona Agregar a pantalla de inicio.";
+}
+
+if (
+  window.location.protocol === "https:" &&
+  !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname)
+) {
+  publicUrl.textContent = window.location.origin;
+  publicUrl.hidden = false;
+  copyUrlButton.hidden = false;
+  publicUrlHelp.textContent = "Comparte esta dirección segura para abrir el sitio.";
+}
+
+copyUrlButton.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(publicUrl.textContent);
+    publicUrlHelp.textContent = "Enlace copiado.";
+  } catch (error) {
+    console.error("No se pudo copiar el enlace público:", error);
+    publicUrlHelp.textContent = "No se pudo copiar. Selecciona la dirección para copiarla.";
+  }
+});
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  installPrompt = event;
+  installButton.hidden = false;
+  installHelp.textContent = "Instala la aplicación para abrirla desde tu pantalla de inicio.";
+});
+
+window.addEventListener("appinstalled", () => {
+  installPrompt = null;
+  installButton.hidden = true;
+  installHelp.textContent = "La aplicación quedó instalada en este dispositivo.";
+});
+
+installButton.addEventListener("click", async () => {
+  if (!installPrompt) {
+    return;
+  }
+  await installPrompt.prompt();
+  installPrompt = null;
+  installButton.hidden = true;
+});
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/service-worker.js").catch((error) => {
+      console.error("No se pudo habilitar la instalación sin conexión:", error);
+    });
+  });
+}
 
 function getClientId() {
   const storageKey = "ai-mairon-web-client-id";
@@ -19,7 +80,20 @@ function getClientId() {
 function addMessage(text, role) {
   const bubble = document.createElement("p");
   bubble.className = `bubble ${role}`;
-  bubble.textContent = text;
+  if (role !== "assistant") {
+    bubble.textContent = text;
+  } else {
+    const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+    for (const part of parts) {
+      if (/^\*\*[^*]+\*\*$|^\*[^*]+\*$/.test(part)) {
+        const bold = document.createElement("strong");
+        bold.textContent = part.replace(/^\*\*?|\*\*?$/g, "");
+        bubble.append(bold);
+      } else {
+        bubble.append(document.createTextNode(part));
+      }
+    }
+  }
   messages.append(bubble);
   messages.scrollTop = messages.scrollHeight;
   return bubble;
@@ -32,8 +106,7 @@ async function loadStatus() {
     status.textContent = result.agente ? "Agente configurado" : "Agente no configurado";
     status.classList.toggle("status-error", !result.agente);
     if (!result.qr) {
-      qrHelp.textContent =
-        "Configura el número internacional de WhatsApp Business para mostrar el QR.";
+      qrHelp.textContent = "WhatsApp no está disponible en este momento.";
     }
   } catch {
     status.textContent = "Servicio no disponible";

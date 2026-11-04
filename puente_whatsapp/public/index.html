@@ -4,19 +4,42 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#174d3a" />
-    <title>Asistente Café Santo Domingo</title>
+    <meta
+      name="description"
+      content="Asistente de Facturación Electrónica. Bienvenido al Sistema de Facturación Electrónica RD. ¡Gracias por preferirnos!"
+    />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <title>Asistente de Facturación Electrónica</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <main class="layout">
       <section class="intro">
-        <p class="eyebrow">CAFÉ SANTO DOMINGO</p>
-        <h1>Estamos para ayudarte</h1>
-        <p>
-          Consulta el menú o escríbenos por WhatsApp para recibir atención del
-          asistente.
-        </p>
-        <div class="qr-card">
+        <p class="eyebrow"><strong>Asistente de Facturación Electrónica</strong></p>
+        <h1>Información del sistema</h1>
+        <p>Servicios y datos oficiales pendientes de configuración.</p>
+        <nav class="quick-menu" aria-label="Menú principal">
+          <h2>Opciones de consulta</h2>
+          <ol>
+            <li><a href="#chat">Información general sobre facturación electrónica</a></li>
+            <li><a href="#chat">Información disponible del sistema</a></li>
+            <li><a href="#chat">Consultar información oficial pendiente</a></li>
+          </ol>
+        </nav>
+        <section id="compartir" class="share-card" aria-labelledby="share-title">
+          <h2 id="share-title">Dirección para compartir</h2>
+          <p id="public-url-help" role="status">
+            La dirección pública aparecerá aquí cuando el sitio esté publicado
+            con HTTPS.
+          </p>
+          <code id="public-url" hidden></code>
+          <button id="copy-url-button" class="button copy-button" type="button" hidden>
+            Copiar enlace
+          </button>
+        </section>
+        <div id="whatsapp" class="qr-card">
           <h2>Continúa en WhatsApp</h2>
           <p>Escanea el código con la cámara de tu teléfono.</p>
           <img id="qr-image" alt="Código QR para abrir WhatsApp" hidden />
@@ -27,20 +50,30 @@
             Cargando código QR…
           </p>
         </div>
+        <section id="instalar" class="install-card" aria-labelledby="install-title">
+          <h2 id="install-title">Lleva el asistente contigo</h2>
+          <p id="install-help">
+            Puedes agregar esta página a la pantalla de inicio desde las
+            opciones de tu navegador.
+          </p>
+          <button id="install-button" class="button install-button" type="button" hidden>
+            Instalar aplicación
+          </button>
+        </section>
       </section>
 
-      <section class="chat-card" aria-label="Chat con el asistente">
+      <section id="chat" class="chat-card" aria-label="Chat con el asistente">
         <header class="chat-header">
-          <div class="avatar" aria-hidden="true">C</div>
+        <div class="avatar" aria-hidden="true">F</div>
           <div>
-            <h2>Asistente virtual</h2>
+          <h2>Asistente de facturación</h2>
             <p><span class="online-dot"></span> Atención automatizada</p>
           </div>
           <span id="service-status" class="status">Conectando…</span>
         </header>
         <div id="messages" class="messages" aria-live="polite">
           <p class="bubble assistant">
-            ¡Hola! ¿En qué puedo ayudarte hoy?
+            <strong>Bienvenido al Sistema de Facturación Electrónica RD. ¡Gracias por preferirnos!</strong>
           </p>
         </div>
         <form id="chat-form" class="composer">
